@@ -1,12 +1,13 @@
 import java.util.Scanner;
 import java.net.*;
 import java.io.*;
+// guided by http://makemobiapps.blogspot.com/p/multiple-client-server-chat-programming.html?m=1
 
 class ClientThread extends Thread {
 	DataInputStream inStream = null;
 	DataOutputStream outStream = null;
-	Socket clientSocket = null;
-	ClientThread[] threads;
+	Socket clientSocket = null;//
+	ClientThread[] threads; //a list of threads for the client
 	int maxClients;
 
 	public ClientThread(Socket clientSocket, ClientThread[] threads) {
@@ -29,7 +30,7 @@ class ClientThread extends Thread {
 			outStream.writeUTF("Enter your name: ");
 			String name = inStream.readUTF().trim();
 
-			outStream.writeUTF("\n\tWelcome " + name + " to the chatroom.\n\tEnter \\quit in order to leave.");
+			outStream.writeUTF("\n\tWelcome " + name + " to the chatroom.\n\tEnter \\quit in order to leave.\n");
 
 			//broadcasts to all clients (except the newly created one) that a new client has been added
 			synchronized (this) {

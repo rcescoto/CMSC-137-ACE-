@@ -1,7 +1,7 @@
 import java.util.Scanner;
 import java.net.*;
 import java.io.*;
-
+// guided by http://makemobiapps.blogspot.com/p/multiple-client-server-chat-programming.html?m=1
 public class ChatServer {
 	static Scanner scanner = new Scanner(System.in);
 	static ServerSocket serverSocket = null;

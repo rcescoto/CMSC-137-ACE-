@@ -1,7 +1,7 @@
 import java.util.Scanner;
 import java.net.*;
 import java.io.*;
-
+// guided by http://makemobiapps.blogspot.com/p/multiple-client-server-chat-programming.html?m=1
 public class ChatClient implements Runnable {
 	static Socket clientSocket = null;
 	static DataOutputStream outStream = null;
@@ -68,7 +68,9 @@ public class ChatClient implements Runnable {
 			}
 			offline = true;
 		} catch (IOException ie) {
-			System.out.println(ie);
+			System.exit(0);
+			/*System.out.println("mark");
+			System.out.println(ie);*/
 		}
 	}
 }
