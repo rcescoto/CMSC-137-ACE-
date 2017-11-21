@@ -2,42 +2,55 @@ import java.io.*;
 import java.net.*;
 import java.util.Scanner;
 
-public class ChatClient {
+public class ChatClient implements Runnable {
+	static Socket clientSocket = null;
+	static DataOutputStream sendToServer = null;
+	static DataInputStream receiveFromServer = null;
+	static Scanner scanner = new Scanner(System.in);
+	
 	public static void main(String[] args){
+		int port;
+		
 		try {
-			//scans the client's username (java -jar ChatClient.jar <clientName>)
-			String clientName = args[0];
+			System.out.print("Enter server port number: ");
+			port = scanner.nextInt();
 			
-			//create a scanner object and int placeholder to get the server port
-			Scanner scanner = new Scanner(System.in);
-			System.out.print("Enter server port: ");
-			int port = scanner.nextInt();
+			clientSocket = new Socket("localhost", port);
+			System.out.println("Connected to server.");
 			
-			//create a socket object
-			Socket socket = new Socket("localhost", port);
+			scanner = new Scanner(new InputStreamReader(System.in));
 			
-			//create printwriter and bufferedreader objects to get the client's input
-			PrintWriter printWriter = new PrintWriter(socket.getOutputStream(), true);
-			BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
-			while(true) {
-				//chat proper
-				System.out.print("Enter message: ");
-				String readerInput = bufferedReader.readLine();
-				printWriter.println("(" + clientName + ") " + readerInput);
-				
-				//close chat by typing /quit
-				if (readerInput.equals("/quit")) {
-					bufferedReader.close();
-					printWriter.close();
-					scanner.close();
-					socket.close();
-					System.exit(0);
-				}
-			}
+			sendToServer = new DataOutputStream(clientSocket.getOutputStream());
+			receiveFromServer = new DataInputStream(clientSocket.getInputStream());
 		} catch (Exception e) {
-			System.out.println("include your username in the command-line arguments.");
+			e.printStackTrace();
 		}
 		
+		if (clientSocket != null && sendToServer != null && receiveFromServer != null) {
+			try {
+				//creates a thread to read from server
+				new Thread(new ChatClient()).start();
+
+				//sends data read to server
+				while (true) {
+					sendToServer.writeUTF(scanner.nextLine().trim());
+				}
+			} catch (IOException ie) {
+				System.out.println("IOException + " + ie);
+			}
+		}
+	}
+	
+	public void run() {
+		String inputText;
 		
+		try {
+			while ((inputText = receiveFromServer.readUTF()) != null) {
+				System.out.println(inputText);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.exit(0);
+		}
 	}
 }
