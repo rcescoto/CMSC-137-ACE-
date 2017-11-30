@@ -10,15 +10,18 @@ public class GameJava extends StateBasedGame{
     public static final String title = "MINE";
     public static final int menu =0;
     public static final int play =1;
+
     public String charName = "";
+    public String localhost = "";
 
     public GameJava(String title){//constructor
         super(title);
         this.addState(new Menu(menu));
 
+        localhost = JOptionPane.showInputDialog("Enter host: ");
         charName = JOptionPane.showInputDialog("Enter player name: ");
         try {
-            this.addState(new Play(play, charName));
+            this.addState(new Play(play, charName, localhost));
         } catch (SocketException e) {
             e.printStackTrace();
         }
@@ -41,7 +44,6 @@ public class GameJava extends StateBasedGame{
         }
         catch(SlickException e){
             e.printStackTrace();
-            System.out.println("LUH");
         }
     }
 }

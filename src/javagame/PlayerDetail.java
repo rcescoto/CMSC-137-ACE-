@@ -6,7 +6,8 @@ public class PlayerDetail {
     InetAddress address;
     int port;
     String charName;
-    int x = 0, y = 0, face = 0;
+    int x = 0, y = 0, face = 0, life = 0;
+    String field = "";
 
     public PlayerDetail(String name, InetAddress address, int port) {
         this.charName = name;
@@ -38,6 +39,8 @@ public class PlayerDetail {
         return face;
     }
 
+    public int getLife() { return life; }
+
     public void setX(int x) {
         this.x = x;
     }
@@ -50,9 +53,13 @@ public class PlayerDetail {
         this.face = face;
     }
 
+    public void setLife(int life) { this.life = life; }
+
+    public void setField(String field) { this.field = field; }
+
     public String getDetails() {
         String value = "";
-        value = value + "PLAYER " + charName + " " + x + " " + y + " " + face;
+        value = value + "PLAYER " + charName + " " + x + " " + y + " " + face + " " + life + "-" + field;
         return value;
     }
 }
