@@ -15,7 +15,7 @@ public class GameServer implements Runnable {
     public final int GAME_START = 1;
     public final int IN_PROGRESS = 2;
     public final int GAME_END = 3;
-    public int portNumber = 5555;
+    public int portNumber = 5559;
 
     String playerData;
     int playerCount = 0;
@@ -122,7 +122,6 @@ public class GameServer implements Runnable {
                 gameStage = IN_PROGRESS;
             } else if (gameStage == IN_PROGRESS) {
                 if (playerData.startsWith("PLAYER")) {
-                    System.out.println(playerData);
                     String[] info = playerData.split("-");
                     String[] playerInfo = info[0].split(" ");
                     String playerName = playerInfo[1];
@@ -145,10 +144,7 @@ public class GameServer implements Runnable {
                 } else if (playerData.startsWith("LOSE")) {
                     String[] temp = playerData.split(" ");
                     PlayerDetail p1 = (PlayerDetail) game.getPlayers().get(temp[1].trim());
-                    System.out.println(p1.toString());
-                    p1.setX(-1);
-                    p1.setY(-1);
-                    p1.setFace(-1);
+                    p1.setLife(0);
                     game.updatePlayers(temp[1], p1);
 
                     int validPlayers = 0;
@@ -156,7 +152,7 @@ public class GameServer implements Runnable {
                     for(Iterator ite = game.getPlayers().keySet().iterator(); ite.hasNext();) {
                         String name = (String) ite.next();
                         PlayerDetail player = (PlayerDetail) game.getPlayers().get(name);
-                        if (player.getX() == -1 || player.getY() == -1 || player.getFace() == -1) {
+                        if (player.getLife() == 0) {
                             validPlayers = validPlayers + 1;
                         } else {
                             winner = name;

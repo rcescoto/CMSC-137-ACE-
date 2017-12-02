@@ -71,16 +71,36 @@ public class Play extends BasicGameState implements Runnable {
                     send("CONNECT " + charName + " " + points);
                 } else if (connected == true) {
                     if(serverData.startsWith("PLAYER")) {
-                        System.out.println(serverData);
                         players.clear();
-
                         String[] playersInfo = serverData.split(" : ");
-
                         for(int i=0; i < playersInfo.length; i++) {
                             String[] info = playersInfo[i].split("-");
                             players.add(info[0]);
-                        }
 
+                            info[1] = info[1].replace(" :", "");
+                            if (!(info[1]).equals("null")) {
+                                String[] points = info[1].split(",");
+                                if(points.length == 2) {
+                                    int tempX = Integer.parseInt(points[0].trim());
+                                    int tempY = Integer.parseInt(points[1].trim());
+                                    opened = new Point(tempX, tempY);
+
+                                    for(int j=0; j < bricks.size(); j++) {
+                                        if(bricks.get(i).x == tempX && bricks.get(i).y == tempY) {
+                                            bricks.remove(i);
+                                            break;
+                                        }
+                                    }
+
+                                    for(int j=0; j < minefield.size(); j++) {
+                                        if(minefield.get(i).x == tempX && minefield.get(i).y == tempY) {
+                                            minefield.remove(i);
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     } else if (serverData.startsWith("START")) {
                         String[] temp = serverData.split(" ");
 
@@ -163,22 +183,24 @@ public class Play extends BasicGameState implements Runnable {
                int y = Integer.parseInt(info[3]);
                int tempFace = Integer.parseInt(info[4]);
 
-               Animation temp = mDown;
-               if (tempFace == UP){
-                   temp = mUp;
-               } else if (tempFace == DOWN) {
-                   temp = mDown;
-               } else if (tempFace == LEFT) {
-                   temp = mLeft;
-               } else if (tempFace == RIGHT) {
-                   temp = mRight;
-               }
-
-               temp.draw(x, y);
-               g.drawString(playerName, x, y-20);
-
                g.drawString(playerName + ": " + info[5], 1200, row);
                row = row + 20;
+
+               if (Integer.parseInt(info[5]) != 0) {
+                   Animation temp = mDown;
+                   if (tempFace == UP){
+                       temp = mUp;
+                   } else if (tempFace == DOWN) {
+                       temp = mDown;
+                   } else if (tempFace == LEFT) {
+                       temp = mLeft;
+                   } else if (tempFace == RIGHT) {
+                       temp = mRight;
+                   }
+
+                   temp.draw(x, y);
+                   g.drawString(playerName, x, y-20);
+               }
            }
 
            if (opened != null && flagCoordinate != null) {
@@ -192,6 +214,11 @@ public class Play extends BasicGameState implements Runnable {
 
            for(int i=0; i < bricks.size(); i++) {
                brick.draw(bricks.get(i).x, bricks.get(i).y);
+
+               g.drawString(".", bricks.get(i).x+50, bricks.get(i).y);
+               g.drawString(".", bricks.get(i).x-10, bricks.get(i).y);
+               g.drawString(".", bricks.get(i).x, bricks.get(i).y+60);
+               g.drawString(".", bricks.get(i).x, bricks.get(i).y-15);
            }
 
            for(int i=0; i < minefield.size(); i++) {
@@ -242,32 +269,36 @@ public class Play extends BasicGameState implements Runnable {
         Input move = gc.getInput();
 
         if (isGameOn == true) {
-            if(move.isKeyDown(Input.KEY_DOWN)&& quit == false && playerY < 649){
+            int bounds = checkBounds(playerX, playerY);
+            if(move.isKeyDown(Input.KEY_DOWN)&& quit == false && playerY < 649 && bounds != UP){
                 charac = mDown;
                 playerY += 1;
                 face = DOWN;
             }
-            else if(move.isKeyDown(Input.KEY_UP)&& quit == false && playerY >0){
+            else if(move.isKeyDown(Input.KEY_UP)&& quit == false && playerY > 0 && bounds != DOWN){
                 charac = mUp;
                 playerY -= 1;
                 face = UP;
             }
-            else if(move.isKeyDown(Input.KEY_LEFT)&& quit == false&& playerX  > 0){
+            else if(move.isKeyDown(Input.KEY_LEFT)&& quit == false&& playerX  > 0 && bounds != RIGHT){
                 charac = mLeft;
                 playerX -= 1;
                 face = LEFT;
             }
-            else if(move.isKeyDown(Input.KEY_RIGHT)&& quit == false&& playerX< 1225){
+            else if(move.isKeyDown(Input.KEY_RIGHT)&& quit == false&& playerX < 1225 && bounds != LEFT){
                 charac = mRight;
                 playerX += 1;
                 face = RIGHT;
             }
             else if (move.isKeyDown(Input.KEY_SPACE) && quit == false) {
-                for(int i=0; i < bricks.size(); i++) {
-                    if (playerX <= bricks.get(i).x + 20 && playerX >= bricks.get(i).x - 20 && playerY <= bricks.get(i).y + 20 && playerY >= bricks.get(i).y - 20) {
-                        opened = new Point(bricks.get(i).x, bricks.get(i).y);
-                        bricks.remove(i);
-                    }
+                if (bounds == UP && face == DOWN) {
+                    removeBrick(playerX, playerY);
+                } else if (bounds == DOWN && face == UP) {
+                    removeBrick(playerX, playerY);
+                } else if (bounds == LEFT && face == RIGHT) {
+                    removeBrick(playerX, playerY);
+                } else if (bounds == RIGHT && face == LEFT) {
+                    removeBrick(playerX, playerY);
                 }
             }
             else if(move.isKeyDown(Input.KEY_ESCAPE)){
@@ -276,7 +307,7 @@ public class Play extends BasicGameState implements Runnable {
 
             if ((prevX != playerX || prevY != playerY) && winner == "null" && isGameOn == true) {
                 for(int i=0; i < minefield.size(); i++) {
-                    if (playerX <= minefield.get(i).x + 20 && playerX >= minefield.get(i).x - 20 && playerY <= minefield.get(i).y + 20 && playerY >= minefield.get(i).y - 20) {
+                    if (playerX <= minefield.get(i).x + 10 && playerX >= minefield.get(i).x - 10 && playerY <= minefield.get(i).y + 10 && playerY >= minefield.get(i).y - 10) {
                         opened = new Point(minefield.get(i).x, minefield.get(i).y);
                         minefield.remove(i);
                         life = life - 1;
@@ -288,9 +319,9 @@ public class Play extends BasicGameState implements Runnable {
                     lose = charName;
                 } else {
                     if (opened != null) {
-                        send("PLAYER " + charName + " " + playerX + " " + playerY + " " + face + " " + life + "-" + getMine() + " " + getBrick() + " " + opened.x + "," + opened.y);
+                        send("PLAYER " + charName + " " + playerX + " " + playerY + " " + face + " " + life + "-" + opened.x + "," + opened.y + " ");
                     } else {
-                        send("PLAYER " + charName + " " + playerX + " " + playerY + " " + face + " " + life + "-" + getMine() + " " + getBrick() + " " + "null");
+                        send("PLAYER " + charName + " " + playerX + " " + playerY + " " + face + " " + life + "-" + "null" + " ");
                     }
                 }
             }
@@ -337,37 +368,56 @@ public class Play extends BasicGameState implements Runnable {
         }
     }
 
-    public int getID(){
-        return 1;
-    }
-
     public void send(String message) {
         try {
             byte[] buf = message.getBytes();
             InetAddress address = InetAddress.getByName(server);
-            DatagramPacket packet = new DatagramPacket(buf, buf.length, address, 5555);
+            DatagramPacket packet = new DatagramPacket(buf, buf.length, address, 5559);
             socket.send(packet);
         } catch (UnknownHostException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
+
         }
 
     }
 
-    public String getMine() {
-        String mineLocation = "";
-        for(int i=0; i < minefield.size(); i++) {
-            mineLocation = mineLocation + minefield.get(i).x + "," + minefield.get(i).y + ";";
-        }
-        return mineLocation;
-    }
-
-    public String getBrick() {
-        String brickLocation = "";
+    public int checkBounds(int x, int y) {
+        int bounds = 4;
         for(int i=0; i < bricks.size(); i++) {
-            brickLocation = brickLocation + bricks.get(i).x + "," + bricks.get(i).y + ";";
+            if (x == bricks.get(i).x + 55 && y <= bricks.get(i).y+70 && y >= bricks.get(i).y-70) {
+                bounds = RIGHT;
+            } else if (x == bricks.get(i).x - 55 && y <= bricks.get(i).y+70 && y >= bricks.get(i).y-70) {
+                bounds = LEFT;
+            } else if (y == bricks.get(i).y + 70 && x <= bricks.get(i).x+55 && x >= bricks.get(i).x-55) {
+                bounds = DOWN;
+            } else if (y == bricks.get(i).y - 70 && x <= bricks.get(i).x+55 && x >= bricks.get(i).x-55) {
+                bounds = UP;
+            }
         }
-        return brickLocation;
+        return bounds;
+    }
+
+    public void removeBrick(int x, int y) {
+        for(int i=0; i < bricks.size(); i++) {
+            if (x == bricks.get(i).x + 55 && y <= bricks.get(i).y+60 && y >= bricks.get(i).y-15) {
+                opened = new Point(bricks.get(i).x, bricks.get(i).y);
+                bricks.remove(i);
+            } else if (x == bricks.get(i).x - 55 && y <= bricks.get(i).y+60 && y >= bricks.get(i).y-15) {
+                opened = new Point(bricks.get(i).x, bricks.get(i).y);
+                bricks.remove(i);
+            } else if (y == bricks.get(i).y + 70 && x <= bricks.get(i).x+50 && x >= bricks.get(i).x-10) {
+                opened = new Point(bricks.get(i).x, bricks.get(i).y);
+                bricks.remove(i);
+            } else if (y == bricks.get(i).y - 70 && x <= bricks.get(i).x+50 && x >= bricks.get(i).x-10) {
+                opened = new Point(bricks.get(i).x, bricks.get(i).y);
+                bricks.remove(i);
+            }
+        }
+    }
+
+    public int getID(){
+        return 1;
     }
 }

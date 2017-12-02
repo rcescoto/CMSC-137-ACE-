@@ -20,6 +20,7 @@ public class ServerState {
         for(Iterator ite = players.keySet().iterator(); ite.hasNext();) {
             String name = (String) ite.next();
             PlayerDetail player = (PlayerDetail) players.get(name);
+
             value = value + player.getDetails() + " : ";
         }
         return value;
