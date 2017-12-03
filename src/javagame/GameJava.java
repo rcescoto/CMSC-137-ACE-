@@ -7,9 +7,10 @@ import javax.swing.*;
 import java.net.SocketException;
 
 public class GameJava extends StateBasedGame{
-    public static final String title = "MINE";
+    public static final String title = "IT'S MINE!";
     public static final int menu =0;
     public static final int play =1;
+    public static final int instructions = 2;
 
     public String charName = "";
     public String localhost = "";
@@ -25,11 +26,14 @@ public class GameJava extends StateBasedGame{
         } catch (SocketException e) {
             e.printStackTrace();
         }
+
+        this.addState(new Instructions(instructions));
     }
 
     public void initStatesList(GameContainer gc)throws SlickException{
         this.getState(menu).init(gc, this);
         this.getState(play).init(gc, this);
+        this.getState(instructions).init(gc, this);
         this.enterState(menu);
     }
 

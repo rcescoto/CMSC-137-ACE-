@@ -15,26 +15,26 @@ import java.util.Arrays;
 import java.util.Scanner;
 
 public class Play extends BasicGameState implements Runnable {
-    Animation charac, mUp, mDown, mLeft, mRight, mine, mineSetup, brickSetup, brick, flag, flagSetup;
-    Animation explosionSetup, explosion, brokenSetup, broken, dLeft, dRight, dUp;
-    int UP = 0, DOWN = 1, LEFT = 2, RIGHT = 3;
-    int BRICK = 0, MINE = 1;
-    int face = 1;
-
+    Animation charac, mUp, mDown, mLeft, mRight, dLeft, dRight, dUp;
+    Animation explosionSetup, explosion, brokenSetup, broken, mine, mineSetup, brickSetup, brick, flag, flagSetup;
     Image background;
 
+    int UP = 0, DOWN = 1, LEFT = 2, RIGHT = 3;
+    int BRICK = 0, MINE = 1;
+    int SETUP_MINES = 0, START_GAME = 1, GAME_END = 2;
+
     boolean quit = false;
+    int gameState = SETUP_MINES;
     int[] duration = {200, 200};
 
-    public String taunt = "Move!";
     public String charName = "";
+    String server = "localhost";
 
     int playerX, playerY = 0;
     int mineX, mineY = 0;
 
-    String server = "localhost";
     boolean connected = false;
-    boolean isGameOn = false;
+
     DatagramSocket socket = new DatagramSocket();
     String serverData = "";
     Thread t = new Thread(this);
@@ -48,6 +48,7 @@ public class Play extends BasicGameState implements Runnable {
     String lose = "null";
     int life = 2;
     int openType = 2;
+    int face = 1;
 
     public Play(int state, String name, String localhost) throws SocketException {
         this.charName = name;
@@ -63,7 +64,7 @@ public class Play extends BasicGameState implements Runnable {
                 e.printStackTrace();
             }
 
-            if (isGameOn == true) {
+            if (gameState == START_GAME) {
                 if (connected != true && serverData.startsWith("CONNECTED")) {
                     connected = true;
                 } else if (connected != true) {
@@ -87,18 +88,25 @@ public class Play extends BasicGameState implements Runnable {
                                     int tempX = Integer.parseInt(points[0].trim());
                                     int tempY = Integer.parseInt(points[1].trim());
                                     opened = new Point(tempX, tempY);
+                                    boolean removed = false;
 
+                                    System.out.println(info[1] + " " + tempX + " " + tempY);
                                     for(int j=0; j < bricks.size(); j++) {
                                         if(bricks.get(i).x == tempX && bricks.get(i).y == tempY) {
+                                            openType = BRICK;
+                                            removed = true;
                                             bricks.remove(i);
                                             break;
                                         }
                                     }
 
-                                    for(int j=0; j < minefield.size(); j++) {
-                                        if(minefield.get(i).x == tempX && minefield.get(i).y == tempY) {
-                                            minefield.remove(i);
-                                            break;
+                                    if (removed == false) {
+                                        for(int j=0; j < minefield.size(); j++) {
+                                            if(minefield.get(i).x == tempX && minefield.get(i).y == tempY) {
+                                                openType = MINE;
+                                                minefield.remove(i);
+                                                break;
+                                            }
                                         }
                                     }
                                 }
@@ -144,7 +152,8 @@ public class Play extends BasicGameState implements Runnable {
         }
     }
 
-    public void init(GameContainer gc, StateBasedGame sbg) throws SlickException{background = new Image("map.png");
+    public void init(GameContainer gc, StateBasedGame sbg) throws SlickException{
+        background = new Image("map.png");
         Image[] moveUp = {new Image("isaacsBack.png"), new Image("isaacsBack.png")};
         Image[] moveDown = {new Image("isaacsFront.png"), new Image("isaacsFront.png")};
         Image[] moveLeft = {new Image("isaacsLeft.png"), new Image("isaacsLeft.png")};
@@ -189,7 +198,7 @@ public class Play extends BasicGameState implements Runnable {
     public void render(GameContainer gc, StateBasedGame sbg, Graphics g) throws SlickException{
        background.draw(0,0);
 
-       if (isGameOn == true) {
+       if (gameState == START_GAME) {
            g.drawString("Use arrow keys to move and space bar to check out bricks.", 150, 10);
            charac.draw(playerX,playerY);
            g.drawString(charName, playerX, playerY-20);
@@ -242,7 +251,7 @@ public class Play extends BasicGameState implements Runnable {
            for(int i=0; i < minefield.size(); i++) {
                mine.draw(minefield.get(i).x, minefield.get(i).y);
            }
-       } else if (isGameOn == false) {
+       } else if (gameState == SETUP_MINES) {
             g.drawString("Set up 3 mines around the field: Use the arrow keys for controls and use space bar to put mine in a location.", 150, 10);
             mine.draw(mineX, mineY);
 
@@ -251,13 +260,13 @@ public class Play extends BasicGameState implements Runnable {
             }
 
             if (minefield.size() == 3) {
-                isGameOn = true;
+                gameState = START_GAME;
             }
        }
 
        if (winner != "null") {
            g.clear();
-           if (winner == charName) {
+           if (winner.equals(charName)) {
                send("WINNER " + charName);
                g.drawString("Congratulations " + winner + " you've won the game!", 450, 360);
            } else {
@@ -271,7 +280,8 @@ public class Play extends BasicGameState implements Runnable {
        }
 
         if(quit == true){
-           g.drawString("Continue (Enter)", 600, 250);
+           g.drawString("Continue (Enter)", 600, 150);
+           g.drawString("Instructions (I)", 600, 250);
            g.drawString("Go to Menu (M)", 600, 350);
            g.drawString("Exit Game (E)", 600, 450);
            if(quit == false){
@@ -286,7 +296,7 @@ public class Play extends BasicGameState implements Runnable {
 
         Input move = gc.getInput();
 
-        if (isGameOn == true) {
+        if (gameState == START_GAME) {
             int bounds = checkBounds(playerX, playerY);
             if(move.isKeyDown(Input.KEY_DOWN)&& quit == false && playerY < 649 && bounds != UP){
                 charac = mDown;
@@ -326,7 +336,7 @@ public class Play extends BasicGameState implements Runnable {
                 quit = true;
             }
 
-            if ((prevX != playerX || prevY != playerY) && winner == "null" && isGameOn == true) {
+            if ((prevX != playerX || prevY != playerY) && winner == "null") {
                 for(int i=0; i < minefield.size(); i++) {
                     if (playerX <= minefield.get(i).x + 10 && playerX >= minefield.get(i).x - 10 && playerY <= minefield.get(i).y + 10 && playerY >= minefield.get(i).y - 10) {
                         openType = MINE;
@@ -347,7 +357,7 @@ public class Play extends BasicGameState implements Runnable {
                     }
                 }
             }
-        } else if (isGameOn == false) {
+        } else if (gameState == SETUP_MINES) {
             if(move.isKeyDown(Input.KEY_DOWN)&& quit == false && mineY < 649){
                 mineY += 1;
             } else if(move.isKeyDown(Input.KEY_UP)&& quit == false && mineY >0){
@@ -376,6 +386,10 @@ public class Play extends BasicGameState implements Runnable {
         if(quit == true){
             if(move.isKeyDown(Input.KEY_ENTER)){
                 quit = false;
+            }
+            else if(move.isKeyDown(Input.KEY_I)) {
+                quit = false;
+                sbg.enterState(2);
             }
             else if(move.isKeyDown(Input.KEY_M)){
                 quit = false;

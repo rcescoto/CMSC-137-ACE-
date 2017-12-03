@@ -29,7 +29,7 @@ public class Menu extends BasicGameState{
         int ypos = Mouse.getY();
         if((xpos>555 && xpos<755)&&(ypos>540 && ypos<570)){
             if(Mouse.isButtonDown(0)){
-                sbg.enterState(1);
+                sbg.enterState(2);
             }
         }
         else if((xpos>555 && xpos<755)&&(ypos>490 && ypos<520)){
@@ -38,8 +38,8 @@ public class Menu extends BasicGameState{
             }
         }
     }
+
     public int getID(){
         return 0;
     }
-
 }
