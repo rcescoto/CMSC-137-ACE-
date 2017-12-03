@@ -16,7 +16,9 @@ import java.util.Scanner;
 
 public class Play extends BasicGameState implements Runnable {
     Animation charac, mUp, mDown, mLeft, mRight, mine, mineSetup, brickSetup, brick, flag, flagSetup;
+    Animation explosionSetup, explosion, brokenSetup, broken, dLeft, dRight, dUp;
     int UP = 0, DOWN = 1, LEFT = 2, RIGHT = 3;
+    int BRICK = 0, MINE = 1;
     int face = 1;
 
     Image background;
@@ -45,6 +47,7 @@ public class Play extends BasicGameState implements Runnable {
     String winner = "null";
     String lose = "null";
     int life = 2;
+    int openType = 2;
 
     public Play(int state, String name, String localhost) throws SocketException {
         this.charName = name;
@@ -141,7 +144,7 @@ public class Play extends BasicGameState implements Runnable {
         }
     }
 
-    public void init(GameContainer gc, StateBasedGame sbg) throws SlickException{background = new Image("grassbg.jpg");
+    public void init(GameContainer gc, StateBasedGame sbg) throws SlickException{background = new Image("map.png");
         Image[] moveUp = {new Image("isaacsBack.png"), new Image("isaacsBack.png")};
         Image[] moveDown = {new Image("isaacsFront.png"), new Image("isaacsFront.png")};
         Image[] moveLeft = {new Image("isaacsLeft.png"), new Image("isaacsLeft.png")};
@@ -154,6 +157,14 @@ public class Play extends BasicGameState implements Runnable {
 
         charac = mDown;
 
+        Image[] digUp = {new Image("digFront.png"), new Image("digFront.png")};
+        Image[] digLeft = {new Image("digLeft.png"), new Image("digLeft.png")};
+        Image[] digRight = {new Image("digRight.png"), new Image("digRight.png")};
+
+        dUp = new Animation(digUp, duration, false);
+        dLeft = new Animation(digLeft, duration, false);
+        dRight = new Animation(digRight, duration, false);
+
         Image[] mineImg = {new Image("mine.png"), new Image("mine.png")};
         mineSetup = new Animation(mineImg, duration, false);
         mine = mineSetup;
@@ -165,6 +176,14 @@ public class Play extends BasicGameState implements Runnable {
         Image[] flagImg = {new Image("flag.png"), new Image("flag.png") };
         flagSetup = new Animation(flagImg, duration, false);
         flag = flagSetup;
+
+        Image[] explosionImg = {new Image("explosion.png"), new Image("explosion.png")};
+        explosionSetup = new Animation(explosionImg, duration, false);
+        explosion = explosionSetup;
+
+        Image[] brokenImg = {new Image("break.png"), new Image("break.png")};
+        brokenSetup = new Animation(brokenImg, duration, false);
+        broken = brokenSetup;
     }
 
     public void render(GameContainer gc, StateBasedGame sbg, Graphics g) throws SlickException{
@@ -208,17 +227,16 @@ public class Play extends BasicGameState implements Runnable {
                    flag.draw(flagCoordinate.x, flagCoordinate.y);
                    winner = charName;
                } else {
-                   g.fillOval(opened.x, opened.y, 100, 100);
+                   if (openType == MINE) {
+                       explosion.draw(opened.x, opened.y);
+                   } else if (openType == BRICK) {
+                       broken.draw(opened.x, opened.y);
+                   }
                }
            }
 
            for(int i=0; i < bricks.size(); i++) {
                brick.draw(bricks.get(i).x, bricks.get(i).y);
-
-               g.drawString(".", bricks.get(i).x+50, bricks.get(i).y);
-               g.drawString(".", bricks.get(i).x-10, bricks.get(i).y);
-               g.drawString(".", bricks.get(i).x, bricks.get(i).y+60);
-               g.drawString(".", bricks.get(i).x, bricks.get(i).y-15);
            }
 
            for(int i=0; i < minefield.size(); i++) {
@@ -292,12 +310,15 @@ public class Play extends BasicGameState implements Runnable {
             }
             else if (move.isKeyDown(Input.KEY_SPACE) && quit == false) {
                 if (bounds == UP && face == DOWN) {
+                    charac = dUp;
                     removeBrick(playerX, playerY);
                 } else if (bounds == DOWN && face == UP) {
                     removeBrick(playerX, playerY);
                 } else if (bounds == LEFT && face == RIGHT) {
+                    charac = dRight;
                     removeBrick(playerX, playerY);
                 } else if (bounds == RIGHT && face == LEFT) {
+                    charac = dLeft;
                     removeBrick(playerX, playerY);
                 }
             }
@@ -308,6 +329,7 @@ public class Play extends BasicGameState implements Runnable {
             if ((prevX != playerX || prevY != playerY) && winner == "null" && isGameOn == true) {
                 for(int i=0; i < minefield.size(); i++) {
                     if (playerX <= minefield.get(i).x + 10 && playerX >= minefield.get(i).x - 10 && playerY <= minefield.get(i).y + 10 && playerY >= minefield.get(i).y - 10) {
+                        openType = MINE;
                         opened = new Point(minefield.get(i).x, minefield.get(i).y);
                         minefield.remove(i);
                         life = life - 1;
@@ -380,7 +402,6 @@ public class Play extends BasicGameState implements Runnable {
             e.printStackTrace();
 
         }
-
     }
 
     public int checkBounds(int x, int y) {
@@ -402,15 +423,19 @@ public class Play extends BasicGameState implements Runnable {
     public void removeBrick(int x, int y) {
         for(int i=0; i < bricks.size(); i++) {
             if (x == bricks.get(i).x + 55 && y <= bricks.get(i).y+60 && y >= bricks.get(i).y-15) {
+                openType = BRICK;
                 opened = new Point(bricks.get(i).x, bricks.get(i).y);
                 bricks.remove(i);
             } else if (x == bricks.get(i).x - 55 && y <= bricks.get(i).y+60 && y >= bricks.get(i).y-15) {
+                openType = BRICK;
                 opened = new Point(bricks.get(i).x, bricks.get(i).y);
                 bricks.remove(i);
             } else if (y == bricks.get(i).y + 70 && x <= bricks.get(i).x+50 && x >= bricks.get(i).x-10) {
+                openType = BRICK;
                 opened = new Point(bricks.get(i).x, bricks.get(i).y);
                 bricks.remove(i);
             } else if (y == bricks.get(i).y - 70 && x <= bricks.get(i).x+50 && x >= bricks.get(i).x-10) {
+                openType = BRICK;
                 opened = new Point(bricks.get(i).x, bricks.get(i).y);
                 bricks.remove(i);
             }
