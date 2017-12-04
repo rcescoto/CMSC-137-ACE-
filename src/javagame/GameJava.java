@@ -6,6 +6,7 @@ import org.newdawn.slick.state.*;
 import javax.swing.*;
 import java.net.SocketException;
 
+// MAIN JAVA FILE FOR THE CLIENT/PLAYER
 public class GameJava extends StateBasedGame{
     public static final String title = "IT'S MINE!";
     public static final int menu =0;
@@ -15,6 +16,7 @@ public class GameJava extends StateBasedGame{
     public String charName = "";
     public String localhost = "";
 
+    // adds possible states contained in the game - menu, instructions, game
     public GameJava(String title){//constructor
         super(title);
         this.addState(new Menu(menu));
@@ -30,6 +32,7 @@ public class GameJava extends StateBasedGame{
         this.addState(new Instructions(instructions));
     }
 
+    // intilializes all the states and enters the menu state
     public void initStatesList(GameContainer gc)throws SlickException{
         this.getState(menu).init(gc, this);
         this.getState(play).init(gc, this);
@@ -38,6 +41,7 @@ public class GameJava extends StateBasedGame{
     }
 
 
+    // creates an app container for the game
     public static void main(String[] args){
         AppGameContainer appgc;
 

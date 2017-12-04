@@ -3,6 +3,7 @@ package javagame;
 import java.util.HashMap;
 import java.util.Iterator;
 
+// CLASS FOR MAINTAINING ALL THE PLAYERS
 public class ServerState {
     private HashMap<String, PlayerDetail> players = new HashMap<String, PlayerDetail>();
     public ServerState(){}
@@ -20,7 +21,6 @@ public class ServerState {
         for(Iterator ite = players.keySet().iterator(); ite.hasNext();) {
             String name = (String) ite.next();
             PlayerDetail player = (PlayerDetail) players.get(name);
-
             value = value + player.getDetails() + " : ";
         }
         return value;

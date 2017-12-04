@@ -2,12 +2,12 @@ package javagame;
 
 import java.net.InetAddress;
 
+// CLASS FOR THE DETAILS OF A PLAYER: setters and getters for the different attributes of the player
 public class PlayerDetail {
     InetAddress address;
     int port;
     String charName;
-    int x = 0, y = 0, face = 0, life = 0;
-    String field = "";
+    int x = 0, y = 0, face = 0, life = 0, openX = 0, openY = 0, openType = 2;
 
     public PlayerDetail(String name, InetAddress address, int port) {
         this.charName = name;
@@ -55,11 +55,15 @@ public class PlayerDetail {
 
     public void setLife(int life) { this.life = life; }
 
-    public void setField(String field) { this.field = field; }
+    public void setOpenX(int x) { this.openX = x; }
+
+    public void setOpenY(int y) { this.openY = y; }
+
+    public void setOpenType(int type) { this.openType = type; }
 
     public String getDetails() {
         String value = "";
-        value = value + "PLAYER " + charName + " " + x + " " + y + " " + face + " " + life + "-" + field;
+        value = value + "PLAYER " + charName + " " + x + " " + y + " " + face + " " + life + " " + openX + " " + openY + " " + openType;
         return value;
     }
 }

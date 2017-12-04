@@ -5,6 +5,7 @@ import org.newdawn.slick.*;
 import org.newdawn.slick.state.BasicGameState;
 import org.newdawn.slick.state.StateBasedGame;
 
+// INSTRUCTIONS STATE - tells how to play the game
 public class Instructions extends BasicGameState {
     Image background;
     Image bricks, characters, digs, flag, mines;
@@ -12,6 +13,7 @@ public class Instructions extends BasicGameState {
     public Instructions(int state){
     }
 
+    // initializes the components that will be used for the instruction state
     public void init(GameContainer gc, StateBasedGame sbg) throws SlickException {
         background = new Image("map.png");
         bricks = new Image("bricks.png");
@@ -20,6 +22,8 @@ public class Instructions extends BasicGameState {
         flag = new Image("flag.png");
         mines = new Image("mines.png");
     }
+
+    // renders/draws the components used in the instruction state
     public void render(GameContainer gc, StateBasedGame sbg, Graphics g) throws SlickException{
         g.drawString("IT'S MINE!", 600, 100);
         background.draw(0,0);
@@ -45,6 +49,8 @@ public class Instructions extends BasicGameState {
         g.drawString("Also, some of the bricks has traps. Goodluck!", 150, 380);
         g.drawString("Press Enter to proceed to the game...", 500, 480);
     }
+
+    // checks whether the button 'Enter' has been pressed to proceed to the actual game
     public void update(GameContainer gc, StateBasedGame sbg, int delta) throws SlickException{
         Input enter = gc.getInput();
         if(enter.isKeyDown(Input.KEY_ENTER)){
@@ -52,6 +58,7 @@ public class Instructions extends BasicGameState {
         }
     }
 
+    // returns the state number for the instruction state
     public int getID(){
         return 2;
     }
