@@ -51,76 +51,14 @@ public class Play extends BasicGameState implements Runnable {
     int openType = 2;
     int face = 1;
 
+    // initializes game state and starts the thread for the UDP
     public Play(int state, String name, String localhost) throws SocketException {
         this.charName = name;
         this.server = localhost;
         t.start();
     }
 
-    public void run() {
-        while(true) {
-            try {
-                Thread.sleep(1);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-
-            if (gameState == START_GAME) {
-                if (connected != true && serverData.startsWith("CONNECTED")) {
-                    connected = true;
-                } else if (connected != true) {
-                    String points = "";
-                    for(int i=0; i < minefield.size(); i++) {
-                        points = points + minefield.get(i).x + "," + minefield.get(i).y + ";";
-                    }
-                    send("CONNECT " + charName + " " + points);
-                } else if (connected == true) {
-                    if(serverData.startsWith("PLAYER")) {
-                        players.clear();
-                        String[] playersInfo = serverData.split(" : ");
-                        for(int i=0; i < playersInfo.length; i++) {
-                            players.add(playersInfo[i]);
-                        }
-                    } else if (serverData.startsWith("START")) {
-                        String[] temp = serverData.split(" ");
-
-                        String[] tempBricks = temp[1].split(";");
-                        for(int i=0; i < tempBricks.length  ; i++) {
-                            String[] points = tempBricks[i].split(",");
-                            Point coordinate = new Point (Integer.parseInt(points[0]), Integer.parseInt(points[1]));
-                            bricks.add(coordinate);
-                        }
-
-                        String[] tempFlag = temp[2].split(",");
-                        flagCoordinate = new Point(Integer.parseInt(tempFlag[0]), Integer.parseInt(tempFlag[1]));
-
-                        minefield.clear();
-                        String[] tempMine = temp[3].split(";");
-                        for(int i=0; i < tempMine.length; i++) {
-                            String[] points = tempMine[i].split(",");
-                            Point coordinate = new Point(Integer.parseInt(points[0]), Integer.parseInt(points[1]));
-                            minefield.add(coordinate);
-                        }
-                    } else if (serverData.startsWith("WINNER")) {
-                        String[] win = serverData.split(" ");
-                        winner = win[1];
-                    }
-                }
-
-                byte[] buf = new byte[1024];
-                DatagramPacket packet = new DatagramPacket(buf, buf.length);
-                try {
-                    socket.receive(packet);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-                serverData = new String(buf);
-                serverData = serverData.trim();
-            }
-        }
-    }
-
+    // initializes the images/animation needed for the game
     public void init(GameContainer gc, StateBasedGame sbg) throws SlickException{
         background = new Image("map.png");
         Image[] moveUp = {new Image("isaacsBack.png"), new Image("isaacsBack.png")};
@@ -164,52 +102,122 @@ public class Play extends BasicGameState implements Runnable {
         broken = brokenSetup;
     }
 
-    public void render(GameContainer gc, StateBasedGame sbg, Graphics g) throws SlickException{
-       background.draw(0,0);
+    // thread for connecting to the UDP and getting the messages
+    public void run() {
+        while(true) {
+            try {
+                Thread.sleep(1);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
 
-       if (gameState == START_GAME) {
+            if (gameState == START_GAME) {
+                if (connected != true && serverData.startsWith("CONNECTED")) { // declares the start of the game
+                    connected = true;
+                } else if (connected != true) { // starts the game, sends the player name and location of the mines
+                    String points = "";
+                    for(int i=0; i < minefield.size(); i++) {
+                        points = points + minefield.get(i).x + "," + minefield.get(i).y + ";";
+                    }
+                    send("CONNECT " + charName + " " + points);
+                } else if (connected == true) { // while the game is ongoing
+                    if(serverData.startsWith("PLAYER")) { //if the message sent by the server starts with "PLAYER" (indicates a movement or change in state)
+                        System.out.println(serverData);
+                        players.clear(); // remove previous state details
+                        String[] playersInfo = serverData.split(" : "); // parse the data sent and add to an arraylist called players
+                        for(int i=0; i < playersInfo.length; i++) {
+                            players.add(playersInfo[i]);
+                        }
+                    } else if (serverData.startsWith("START")) { // if the message sent by the server starts with "START" (indicates the setup of the mines, flag, and bricks)
+                        String[] temp = serverData.split(" ");
+
+                        // assigns the brick generated in the server state to an arraylist
+                        String[] tempBricks = temp[1].split(";");
+                        for(int i=0; i < tempBricks.length  ; i++) {
+                            String[] points = tempBricks[i].split(",");
+                            Point coordinate = new Point (Integer.parseInt(points[0]), Integer.parseInt(points[1]));
+                            bricks.add(coordinate);
+                        }
+
+                        // assigns a flag to hold the coordinate containing the flag
+                        String[] tempFlag = temp[2].split(",");
+                        flagCoordinate = new Point(Integer.parseInt(tempFlag[0]), Integer.parseInt(tempFlag[1]));
+
+                        // assigns the mines merged in the server state to an arraylist
+                        minefield.clear();
+                        String[] tempMine = temp[3].split(";");
+                        for(int i=0; i < tempMine.length; i++) {
+                            String[] points = tempMine[i].split(",");
+                            Point coordinate = new Point(Integer.parseInt(points[0]), Integer.parseInt(points[1]));
+                            minefield.add(coordinate);
+                        }
+                    } else if (serverData.startsWith("WINNER")) { // if the message sent by the server starts with "WINNER" (indicating someone has won)
+                        String[] win = serverData.split(" ");
+                        winner = win[1];
+                    }
+                }
+
+                // receives the message sent by the server
+                byte[] buf = new byte[1024];
+                DatagramPacket packet = new DatagramPacket(buf, buf.length);
+                try {
+                    socket.receive(packet);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                serverData = new String(buf);
+                serverData = serverData.trim();
+            }
+        }
+    }
+
+    // render the appropriate images and animation for the game
+    public void render(GameContainer gc, StateBasedGame sbg, Graphics g) throws SlickException{
+       background.draw(0,0); // sets the background of the game
+
+       if (gameState == START_GAME) { // when the game is in progress
            g.drawString("Use arrow keys to move and space bar to break the bricks.", 150, 10);
            charac.draw(playerX,playerY);
            g.drawString(charName, playerX, playerY-20);
 
            int row = 10;
            for(int i=0; i < players.size(); i++) {
+               // get the player details and draw it on the screen
                String info[] = (players.get(i)).split(" ");
                String playerName = info[1];
-               int x = Integer.parseInt(info[2]);
-               int y = Integer.parseInt(info[3]);
-               int tempFace = Integer.parseInt(info[4]);
-               int tempLife = Integer.parseInt(info[5]);
-               int tempOpenX = Integer.parseInt(info[6]);
-               int tempOpenY = Integer.parseInt(info[7]);
-               int tempType = Integer.parseInt(info[8]);
+               int x = Integer.parseInt(info[2].trim());
+               int y = Integer.parseInt(info[3].trim());
+               int tempFace = Integer.parseInt(info[4].trim());
+               int tempLife = Integer.parseInt(info[5].trim());
+               int tempOpenX = Integer.parseInt(info[6].trim());
+               int tempOpenY = Integer.parseInt(info[7].trim());
+               int tempType = Integer.parseInt(info[8].trim());
 
                g.drawString(tempLife + " - " + playerName, 1180, row);
                row = row + 20;
 
-               if (tempType == 0) {
-                   System.out.println("BOI BRICKS");
-                   for (int j = 0; j < bricks.size(); j++) {
+               if (tempType == 0) { // if the type opened is a brick
+                   for (int j = 0; j < bricks.size(); j++) { // find the matching opened coordinate with the brick coordinate and remove it from the list
                        if (tempOpenX == bricks.get(j).x && tempOpenY == bricks.get(j).y) {
                            broken.draw(tempOpenX, tempOpenY);
                            bricks.remove(j);
-                           System.out.println("YAS BRICKS");
+                           opened = null;
                            break;
                        }
                    }
-               } else if (tempType == 1) {
-                   System.out.println("BOI MINE");
-                   for(int j=0; j < minefield.size(); j++) {
-                       System.out.println(playerName + " " + tempOpenX + " vs " + minefield.get(j).x + " " + tempOpenY + " vs " + minefield.get(j).y);
+               } else if (tempType == 1) { // if the type opened is a mine
+                   for(int j=0; j < minefield.size(); j++) { // find the matching opened coordinate with the mine coordinate and remove it from the list
                        if (tempOpenX == minefield.get(j).x && tempOpenY == minefield.get(j).y) {
-                           System.out.println("YAS MINE");
                            minefield.remove(j);
                            explosion.draw(tempOpenX, tempOpenY);
+                           opened = null;
                            break;
                        }
                    }
                }
 
+               // if the life of the player is not equal to zero, draw the character on the screen
                if (tempLife != 0) {
                    Animation temp = mDown;
                    if (tempFace == UP){
@@ -228,18 +236,19 @@ public class Play extends BasicGameState implements Runnable {
            }
 
            if (opened != null && flagCoordinate != null) {
-               if (opened.x == flagCoordinate.x && opened.y == flagCoordinate.y) {
+               if (opened.x == flagCoordinate.x && opened.y == flagCoordinate.y) { // checks to see if opened coordinate is equal to the flag coordinate
                    flag.draw(flagCoordinate.x, flagCoordinate.y);
-                   winner = charName;
+                   winner = charName; // declares the winner
                } else {
-                   if (openType == MINE) {
+                   if (openType == MINE) { // draws the explosion for an opened mine
                        explosion.draw(opened.x, opened.y);
-                   } else if (openType == BRICK) {
+                   } else if (openType == BRICK) { // draws a broken brick for an opened brick
                        broken.draw(opened.x, opened.y);
                    }
                }
            }
 
+           // draws the bricks available on the screen
            for(int i=0; i < bricks.size(); i++) {
                if (bricks.get(i).x == flagCoordinate.x && bricks.get(i).y == flagCoordinate.y) {
                    flag.draw(bricks.get(i).x, bricks.get(i).y);
@@ -251,33 +260,38 @@ public class Play extends BasicGameState implements Runnable {
            for(int i=0; i < minefield.size(); i++) {
                mine.draw(minefield.get(i).x, minefield.get(i).y);
            }
-       } else if (gameState == SETUP_MINES) {
+       } else if (gameState == SETUP_MINES) { // when the game is on the setup mines stage
             g.drawString("Set up 3 mines around the field: Use the arrow keys for controls and use space bar to put mine in a location.", 150, 10);
-            mine.draw(mineX, mineY);
 
+            // draws the mines setup and the initial mine that will be moved
+            mine.draw(mineX, mineY);
             for(int i=0; i < minefield.size(); i++) {
                 mine.draw(minefield.get(i).x, minefield.get(i).y);
             }
 
+            // if the mines set is already 3, start the game
             if (minefield.size() == 3) {
                 gameState = START_GAME;
             }
        }
 
+       // if there is a winner
        if (winner != "null") {
            g.clear();
            if (winner.equals(charName)) {
-               g.drawString("Congratulations " + winner + " you've won the game!", 450, 360);
+               g.drawString("Congratulations " + winner + " you've won the game!", 450, 360); // display congratulations on the winning player
            } else {
-               g.drawString("You lose. " + winner + " has won the game.", 500, 360);
+               g.drawString("You lose. " + winner + " has won the game.", 500, 360); // displays you lose on the losing player
            }
        }
 
+       // if a player has lost all of his/her lives
        if (lose != "null") {
            g.clear();
            g.drawString("You've lost all your lives. You lose.", 500, 360);
        }
 
+       // displays the options available when a user presses "ESC"
         if(quit == true){
            g.drawString("Continue (Enter)", 600, 150);
            g.drawString("Instructions (I)", 600, 250);
@@ -286,17 +300,20 @@ public class Play extends BasicGameState implements Runnable {
            if(quit == false){
                g.clear();
            }
-       }
+        }
     }
 
+    // updates the game based on appropriate functions
     public void update(GameContainer gc, StateBasedGame sbg, int delta) throws SlickException{
         int prevX = playerX;
         int prevY = playerY;
 
-        Input move = gc.getInput();
+        Input move = gc.getInput(); // gets the input movement
 
-        if (gameState == START_GAME) {
-            int bounds = checkBounds(playerX, playerY);
+        if (gameState == START_GAME) { // if the game is already starting
+            int bounds = checkBounds(playerX, playerY); // gets the bounds of the location
+
+            // checks for the movement of the character
             if(move.isKeyDown(Input.KEY_DOWN)&& quit == false && playerY < 649 && bounds != UP){
                 charac = mDown;
                 playerY += 1;
@@ -317,7 +334,8 @@ public class Play extends BasicGameState implements Runnable {
                 playerX += 1;
                 face = RIGHT;
             }
-            else if (move.isKeyDown(Input.KEY_SPACE) && quit == false) {
+            else if (move.isKeyDown(Input.KEY_SPACE) && quit == false) { // if the space bar has been pushed
+                // remove the brick which the character faces
                 if (bounds == UP && face == DOWN) {
                     charac = dUp;
                     removeBrick(playerX, playerY);
@@ -331,10 +349,11 @@ public class Play extends BasicGameState implements Runnable {
                     removeBrick(playerX, playerY);
                 }
 
+                // if there is an opened mine or brick
                 if (opened != null) {
-                    if (opened.x != flagCoordinate.x && opened.y != flagCoordinate.y) {
-                        send("PLAYER " + charName + " " + playerX + " " + playerY + " " + face + " " + life + " " + opened.x + " " + opened.y + " " + openType);
-                    } else {
+                    if (opened.x != flagCoordinate.x && opened.y != flagCoordinate.y) { // if the brick doesn't contain the flag
+                        send("PLAYER " + charName + " " + playerX + " " + playerY + " " + face + " " + life + " " + opened.x + " " + opened.y + " " + openType); // sends player details to the server
+                    } else { // if the brick contains the flag, end the game and send the winning name to the server
                         send("WINNER " + charName);
                     }
                 }
@@ -344,27 +363,28 @@ public class Play extends BasicGameState implements Runnable {
             }
 
             if ((prevX != playerX || prevY != playerY) && winner == "null") {
-                int prevLife = life;
-                for(int i=0; i < minefield.size(); i++) {
-                    if (playerX <= minefield.get(i).x + 10 && playerX >= minefield.get(i).x - 10 && playerY <= minefield.get(i).y + 10 && playerY >= minefield.get(i).y - 10) {
+                for(int i=0; i < minefield.size(); i++) { // checks all the mines if the character has stepped in any
+                    if (playerX <= minefield.get(i).x + 10 && playerX >= minefield.get(i).x - 10 && playerY <= minefield.get(i).y + 10 && playerY >= minefield.get(i).y - 10) { // if he/she did
                         opened = null;
                         openType = MINE;
                         opened = new Point(minefield.get(i).x, minefield.get(i).y);
                         minefield.remove(i);
-                        life = life - 1;
+                        life = life - 1; // lessen the life and remove the mine from the list
+                        send("PLAYER " + charName + " " + playerX + " " + playerY + " " + face + " " + life + " " + opened.x + " " + opened.y + " " + openType); // send the data of the opened mine to the server
                     }
                 }
 
-                if (life == 0) {
-                    send("LOSE " + charName);
+                if (life == 0) { // if the life of a player is already 0
+                    send("LOSE " + charName); // send message to the server that the character already lost
                     lose = charName;
-                } else if (life < prevLife){
-                    send("PLAYER " + charName + " " + playerX + " " + playerY + " " + face + " " + life + " " + opened.x + " " + opened.y + " " + openType);
-                } else {
+                } else if (opened == null){ // if no mine or brick has been opened, send the movement of the character to the server
                     send("PLAYER " + charName + " " + playerX + " " + playerY + " " + face + " " + life + " " + -1 + " " + -1 + " " + 2);
                 }
             }
-        } else if (gameState == SETUP_MINES) {
+
+        } else if (gameState == SETUP_MINES) { // if the game is still being setup
+
+            // movements available for positioning the mine
             if(move.isKeyDown(Input.KEY_DOWN)&& quit == false && mineY < 649){
                 mineY += 1;
             } else if(move.isKeyDown(Input.KEY_UP)&& quit == false && mineY >0){
@@ -373,16 +393,16 @@ public class Play extends BasicGameState implements Runnable {
                 mineX -= 1;
             } else if(move.isKeyDown(Input.KEY_RIGHT)&& quit == false&& mineX < 1225){
                 mineX += 1;
-            } else if (move.isKeyDown(Input.KEY_SPACE) && quit == false) {
+            } else if (move.isKeyDown(Input.KEY_SPACE) && quit == false) { // movement for positioning a mine
                 Point tempPoint = new Point(mineX, mineY);
                 boolean contains = false;
-                for(int i=0; i < minefield.size(); i++) {
+                for(int i=0; i < minefield.size(); i++) { // checks if the mine already exists in the list
                     if (minefield.get(i).x == mineX && minefield.get(i).y == mineY) {
                         contains = true;
                     }
                 }
 
-                if (contains == false) {
+                if (contains == false) { // if it doesn't, add the mine to the minefield
                     minefield.add(tempPoint);
                 }
             } else if(move.isKeyDown(Input.KEY_ESCAPE)){
@@ -390,27 +410,29 @@ public class Play extends BasicGameState implements Runnable {
             }
         }
 
+        // if the player has chosen "ESC" - show the appropriate options and updates the effect of choosing those options
         if(quit == true){
-            if(move.isKeyDown(Input.KEY_ENTER)){
+            if(move.isKeyDown(Input.KEY_ENTER)){ // continues the game
                 quit = false;
             }
-            else if(move.isKeyDown(Input.KEY_I)) {
+            else if(move.isKeyDown(Input.KEY_I)) { // goes to the instruction state
                 quit = false;
                 sbg.enterState(2);
             }
-            else if(move.isKeyDown(Input.KEY_M)){
+            else if(move.isKeyDown(Input.KEY_M)){ // goes back to the menu
                 quit = false;
                 charac = mDown;
                 playerX = 0;
                 playerY = 0;
                 sbg.enterState(0);
             }
-            else if(move.isKeyDown(Input.KEY_E)){
+            else if(move.isKeyDown(Input.KEY_E)){ // exits the game
                 System.exit(0);
             }
         }
     }
 
+    // sends a message to the server
     public void send(String message) {
         try {
             byte[] buf = message.getBytes();
@@ -425,6 +447,7 @@ public class Play extends BasicGameState implements Runnable {
         }
     }
 
+    // check if the character is within the bounds of a brick
     public int checkBounds(int x, int y) {
         int bounds = 4;
         for(int i=0; i < bricks.size(); i++) {
@@ -441,6 +464,7 @@ public class Play extends BasicGameState implements Runnable {
         return bounds;
     }
 
+    // removes the brick at a given location
     public void removeBrick(int x, int y) {
         opened = null;
         for(int i=0; i < bricks.size(); i++) {
@@ -464,6 +488,7 @@ public class Play extends BasicGameState implements Runnable {
         }
     }
 
+    // returns the state number of play
     public int getID(){
         return 1;
     }

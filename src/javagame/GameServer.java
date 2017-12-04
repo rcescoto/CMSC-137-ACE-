@@ -151,7 +151,6 @@ public class GameServer implements Runnable {
                     int openY = Integer.parseInt(playerInfo[7].trim());
                     int type = Integer.parseInt(playerInfo[8].trim());
 
-                    System.out.println(playerData);
                     if (type == 1 || type == 0) {
                         System.out.println(playerData);
                     }
