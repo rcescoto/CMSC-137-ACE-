@@ -250,16 +250,18 @@ public class Play extends BasicGameState implements Runnable {
 
            // draws the bricks available on the screen
            for(int i=0; i < bricks.size(); i++) {
-               if (bricks.get(i).x == flagCoordinate.x && bricks.get(i).y == flagCoordinate.y) {
-                   flag.draw(bricks.get(i).x, bricks.get(i).y);
-               } else {
-                   brick.draw(bricks.get(i).x, bricks.get(i).y);
-               }
+//               if (bricks.get(i).x == flagCoordinate.x && bricks.get(i).y == flagCoordinate.y) {
+//                   flag.draw(bricks.get(i).x, bricks.get(i).y);
+//               } else {
+//                   brick.draw(bricks.get(i).x, bricks.get(i).y);
+//               }
+
+               brick.draw(bricks.get(i).x, bricks.get(i).y);
            }
 
-           for(int i=0; i < minefield.size(); i++) {
-               mine.draw(minefield.get(i).x, minefield.get(i).y);
-           }
+//           for(int i=0; i < minefield.size(); i++) {
+//               mine.draw(minefield.get(i).x, minefield.get(i).y);
+//           }
        } else if (gameState == SETUP_MINES) { // when the game is on the setup mines stage
             g.drawString("Set up 3 mines around the field: Use the arrow keys for controls and use space bar to put mine in a location.", 150, 10);
 
