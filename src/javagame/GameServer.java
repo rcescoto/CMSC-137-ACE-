@@ -4,6 +4,8 @@ import java.awt.*;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -15,7 +17,7 @@ public class GameServer implements Runnable {
     public final int GAME_START = 1;
     public final int IN_PROGRESS = 2;
     public final int GAME_END = 3;
-    public int portNumber = 5555;
+    public static int portNumber = 50000;
 
     String playerData;
     int playerCount = 0;
@@ -28,13 +30,15 @@ public class GameServer implements Runnable {
     ArrayList<Point> bricks = new ArrayList<Point>();
     Point flag;
 
-    public static void main(String args[]) {
+    public static void main(String args[]) throws Exception {
         System.out.print("Enter number of players needed: ");
 
         Scanner scanner = new Scanner(System.in);
         int totalPlayers = scanner.nextInt();
 
         new GameServer(totalPlayers);
+        
+        new ChatServer(totalPlayers, portNumber).run();;
     }
 
     public GameServer(int numPlayers) {

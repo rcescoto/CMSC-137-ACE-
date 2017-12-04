@@ -8,6 +8,8 @@ import org.newdawn.slick.state.*;
 
 import javax.swing.*;
 import java.awt.*;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.*;
 import java.util.ArrayList;
@@ -46,14 +48,15 @@ public class Play extends BasicGameState implements Runnable {
     String lose = "null";
     int life = 2;
 
-    public Play(int state, String name, String localhost) throws SocketException {
-        this.charName = name;
+    public Play(int state, String name, String localhost) throws IOException {
+    	this.charName = name;
         this.server = localhost;
         t.start();
     }
 
     public void run() {
-        while(true) {
+    	new ChatClient(server, charName).run();
+    	while(true) {
             try {
                 Thread.sleep(1);
             } catch (InterruptedException e) {
